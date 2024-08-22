@@ -31,9 +31,9 @@ def fetch_and_store(fcdt, tcdt):
 
     for item in data['pathData']:
         timestamp = item['timestamp']
-        cur.execute('SELECT 1 FROM path WHERE timestamp = ?', (timestamp,))
-        if cur.fetchone():
-            continue
+        # cur.execute('SELECT 1 FROM path WHERE timestamp = ?', (timestamp,))
+        # if cur.fetchone():
+        #     continue
 
         entry = item['data'][0]
         objectId = item['data'][1]["value"]
@@ -46,7 +46,7 @@ def fetch_and_store(fcdt, tcdt):
 
 current_fcdt = start
 while current_fcdt < end:
-    next_tcdt = current_fcdt + 3600
+    next_tcdt = current_fcdt + 36000
     fetch_and_store(current_fcdt, next_tcdt)
     current_fcdt = next_tcdt + 1
 
