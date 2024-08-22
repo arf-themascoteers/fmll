@@ -38,9 +38,10 @@ def get_collision(rows):
     return True, all
 
 
-def plot(f,t,tw,n,canvas):
+def plot(f,t,tw,n,root):
+    root.show_loading()
     collisions = []
-    canvas.delete("all")
+    root.canvas.delete("all")
     rows = db_handler.get_data_by_from_to_netId(f,t,n)
     rows = keep_crossing_only(rows,n)
     start = f
@@ -54,7 +55,8 @@ def plot(f,t,tw,n,canvas):
         start = end+1
         end = start + tw
 
-    print(len(collisions))
+    root.show_nearmisses(len(collisions))
+    root.stop_progress_bar()
     # for x, y, channelId, objectId in rows:
     #     color = 'red' if channelId == 0 else 'green' if channelId == 1 else 'blue' if channelId == 2 else 'black'
     #     canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color, outline=color)
