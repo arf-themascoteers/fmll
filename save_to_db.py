@@ -7,11 +7,16 @@ end = 1723597200
 token = '666f7f95ef93326dba001c82'
 netid = 'CM99V122139007597'
 
+#CM99V122139007597#amberly
+#CM27V122149004668#school
+#CM99V122113000052#ormond
+
 conn = sqlite3.connect('path_data.db')
 cur = conn.cursor()
 
 cur.execute('''
     CREATE TABLE IF NOT EXISTS path (
+        networkId TEXT,
         timestamp INTEGER,
         channelId INTEGER,
         objectId INTEGER,
@@ -31,16 +36,14 @@ def fetch_and_store(fcdt, tcdt):
 
     for item in data['pathData']:
         timestamp = item['timestamp']
-        # cur.execute('SELECT 1 FROM path WHERE timestamp = ?', (timestamp,))
-        # if cur.fetchone():
-        #     continue
-
         entry = item['data'][0]
         objectId = item['data'][1]["value"]
         channelId = entry['channelId']
         for value in entry['value']:
             x, y = value[0], value[1]
-            cur.execute('INSERT INTO path (timestamp, channelId, objectId, x, y) VALUES (?, ?, ?, ?, ?)', (timestamp, channelId, objectId, x, y))
+            cur.execute('INSERT INTO path (networkId, timestamp, channelId, objectId, x, y) '
+                        'VALUES (?, ?, ?, ?, ?,?)',
+                        (netid, timestamp, channelId, objectId, x, y))
 
     conn.commit()
 
