@@ -1,26 +1,13 @@
-import sqlite3
+import db_handler
+import configs
 
 
-def plot(f,t,n):
+def plot(f,t,n,canvas):
     canvas.delete("all")
-    from_timestamp = int(from_entry.get())
-    to_timestamp = int(to_entry.get())
+    rows = db_handler.get_data_by_from_to_netId(f,t,n)
 
-    conn = sqlite3.connect('path_data.db')
-    cur = conn.cursor()
-
-    cur.execute('''
-        SELECT x, y, channelId FROM path 
-        WHERE timestamp BETWEEN ? AND ?
-    ''', (from_timestamp, to_timestamp))
-
-    rows = cur.fetchall()
-    conn.close()
-
-    canvas.delete("all")
-
-    for x, y, channelId in rows:
+    for x, y, channelId, objectId in rows:
         color = 'red' if channelId == 0 else 'green' if channelId == 1 else 'blue' if channelId == 2 else 'black'
         canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color, outline=color)
-
-    canvas.create_polygon([553, 271, 644, 304, 1008, 206, 890, 210], outline='yellow', fill='', width=2)
+    boundary = configs.get_boundary(n)
+    canvas.create_polygon(boundary, outline='yellow', fill='', width=2)

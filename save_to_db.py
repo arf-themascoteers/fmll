@@ -8,8 +8,8 @@ token = '666f7f95ef93326dba001c82'
 netid = 'CM99V122113000052'
 
 #CM99V122139007597#amberly
-#CM27V122149004668#school
-#CM99V122113000052#ormond
+#CM27V122149004668#ormond
+#CM99V122113000052#school
 
 conn = sqlite3.connect('path_data.db')
 cur = conn.cursor()

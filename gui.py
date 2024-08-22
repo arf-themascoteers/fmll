@@ -32,12 +32,13 @@ plot_button = Button(
                         command=lambda: controller.plot(
                             int(from_entry.get()),
                             int(to_entry.get()),
-                            netId_entry.get()
+                            netId_entry.get(),
+                            canvas
                         )
                      )
 plot_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-canvas = tk.Canvas(c2, width=1920, height=340, bg="white", bd=10, relief=tk.SOLID)
+canvas = tk.Canvas(c2, width=1920, height=1080, bg="white", bd=10, relief=tk.SOLID)
 h_scrollbar = tk.Scrollbar(c2, orient=tk.HORIZONTAL, command=canvas.xview)
 h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -47,8 +48,8 @@ v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 canvas.pack(side=tk.LEFT)
 
 canvas.config(xscrollcommand=h_scrollbar.set, yscrollcommand=v_scrollbar.set)
-canvas.config(scrollregion=(0, 0, 1920, 340))
+canvas.config(scrollregion=(0, 0, 1920, 1080))
 
-canvas.create_line(0, 0, 1920, 340, fill="black", width=5)
+#canvas.create_line(0, 0, 1920, 1080, fill="black", width=5)
 
 root.mainloop()
