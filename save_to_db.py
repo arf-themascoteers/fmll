@@ -1,8 +1,9 @@
 import sqlite3
 import requests
 
-start = 1718845200
-end = 1718855200
+start = 1716771600
+#end = 1716871600
+end = 1723597200
 token = '666f7f95ef93326dba001c82'
 netid = 'CM99V122139007597'
 
@@ -13,6 +14,7 @@ cur.execute('''
     CREATE TABLE IF NOT EXISTS path (
         timestamp INTEGER,
         channelId INTEGER,
+        objectId INTEGER,
         x INTEGER,
         y INTEGER
     )
@@ -33,13 +35,12 @@ def fetch_and_store(fcdt, tcdt):
         if cur.fetchone():
             continue
 
-        for entry in item['data']:
-            channelId = entry['channelId']
-            if channelId == 253:
-                continue
-            for value in entry['value']:
-                x, y = value[0], value[1]
-                cur.execute('INSERT INTO path (timestamp, channelId, x, y) VALUES (?, ?, ?, ?)', (timestamp, channelId, x, y))
+        entry = item['data'][0]
+        objectId = item['data'][1]["value"]
+        channelId = entry['channelId']
+        for value in entry['value']:
+            x, y = value[0], value[1]
+            cur.execute('INSERT INTO path (timestamp, channelId, objectId, x, y) VALUES (?, ?, ?, ?, ?)', (timestamp, channelId, objectId, x, y))
 
     conn.commit()
 
