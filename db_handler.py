@@ -14,8 +14,9 @@ def close_connection(conn):
 def get_data_by_from_to_netId(f,t,n):
     cur, conn = create_connection()
     cur.execute('''
-        SELECT x, y, channelId, objectId FROM path 
+        SELECT x, y, channelId, objectId, timestamp FROM path 
         WHERE networkId = ? AND timestamp BETWEEN ? AND ?
+        ORDER BY timestamp
     ''', (n, f, t))
     rows = cur.fetchall()
     close_connection(conn)

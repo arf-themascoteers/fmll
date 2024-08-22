@@ -5,3 +5,10 @@ def get_boundary(netId):
         return [216, 274, 549, 162, 146, 737, 16, 678]
     if netId == "CM99V122113000052":
         return [1257, 161, 1761, 209, 1673, 292, 999, 215]
+
+
+def get_boundary_coords(netId):
+    xys = get_boundary(netId)
+    coords = []
+    for i in range(0, len(xys), 2):
+        coords.append((xys[i],xys[i+1]))
