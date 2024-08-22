@@ -6,6 +6,9 @@ import threading
 
 class Application:
     def __init__(self):
+        self.collisions = None
+        self.collision_controls_frame = None
+        self.controller = controller_nearmisses.NearmissController(self)
         root = tk.Tk()
         root.title("FMLL")
         root.geometry("2200x1000")
@@ -39,7 +42,7 @@ class Application:
         self.nm_label = Label(self.buttons_container, text="", bd=2, relief=tk.SOLID)
 
         plot_button = Button(
-            self.buttons_container, text="Plot",command=self.button_clicked)
+            self.buttons_container, text="Count",command=self.button_clicked)
         plot_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.canvas = tk.Canvas(self.canvas_container, width=1920, height=1080, bg="white", bd=10, relief=tk.SOLID)
@@ -55,8 +58,7 @@ class Application:
         self.canvas.config(scrollregion=(0, 0, 1920, 1080))
 
         root.mainloop()
-        self.collisions = None
-        self.collision_controls_frame = None
+
 
     def show_nearmisses(self, nm):
         self.nm_label.config(text=f"Near miss: {nm}")
@@ -67,12 +69,12 @@ class Application:
     def show_collision_controls(self):
         self.collision_controls_frame = tk.Frame(self.buttons_container)
         self.collision_controls_frame.pack(side=tk.LEFT, padx=5, pady=5)
-        Label(self.collision_controls_frame, text="Collision#:").pack(side=tk.LEFT, padx=5, pady=5)
+        Label(self.collision_controls_frame, text="Near miss#:").pack(side=tk.LEFT, padx=5, pady=5)
         self.collision_number_entry = Entry(self.collision_controls_frame)
         self.collision_number_entry.pack(side=tk.LEFT, padx=5, pady=5)
         self.collision_number_entry.insert(0, '1')
         show_collision_button = Button(
-            self.collision_controls_frame, text="Show",command=None)
+            self.collision_controls_frame, text="Show",command=lambda:self.controller.plot_near_miss(int(self.collision_number_entry.get())))
         show_collision_button.pack(side=tk.LEFT, padx=5, pady=5)
 
     def show_loading(self):
@@ -83,16 +85,12 @@ class Application:
         if self.collision_controls_frame is not None:
             self.collision_controls_frame.destroy()
             self.collision_controls_frame = None
-        threading.Thread(target=lambda: controller_nearmisses.plot(
+        threading.Thread(target=lambda: self.controller.plot(
             int(self.from_entry.get()),
             int(self.to_entry.get()),
             int(self.tw_entry.get()),
-            self.netId_entry.get(),
-            self
+            self.netId_entry.get()
         )).start()
-
-    def set_collisions(self, collision):
-        self.collisions = collision
 
 
 if __name__ == '__main__':
