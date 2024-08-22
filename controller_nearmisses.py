@@ -26,7 +26,7 @@ def keep_crossing_only(rows, networkId):
         y = r[1]
         point = Point(x,y)
         if polygon.contains(point):
-            filtered.append(rows)
+            filtered.append(r)
     return filtered
 
 
@@ -35,7 +35,7 @@ def get_collision(rows):
     peds = [row for row in rows if (row[2] == 1)]
     all = vehicles + peds
     collision = (len(vehicles) != 0 and len(peds) != 0)
-    return collision, all
+    return True, all
 
 
 def plot(f,t,tw,n,canvas):
@@ -46,7 +46,7 @@ def plot(f,t,tw,n,canvas):
     start = f
     end = start + tw
     start_index = 0
-    while end <= t:
+    while end <= t and start_index is not None:
         filtered_rows, start_index = get_paths_within(start, end, rows, start_index)
         collision, actors = get_collision(filtered_rows)
         if collision:

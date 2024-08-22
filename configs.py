@@ -12,3 +12,4 @@ def get_boundary_coords(netId):
     coords = []
     for i in range(0, len(xys), 2):
         coords.append((xys[i],xys[i+1]))
+    return coords

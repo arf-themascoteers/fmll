@@ -20,7 +20,7 @@ from_entry.insert(0, '1718845200000')
 Label(c1, text="To:").pack(side=tk.LEFT, padx=5, pady=5)
 to_entry = Entry(c1)
 to_entry.pack(side=tk.LEFT, padx=5, pady=5)
-to_entry.insert(0, '1718845300000')
+to_entry.insert(0, '1719845200000')
 
 Label(c1, text="NetId:").pack(side=tk.LEFT, padx=5, pady=5)
 netId_entry = Entry(c1)
