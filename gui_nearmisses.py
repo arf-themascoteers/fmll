@@ -64,20 +64,25 @@ class Application:
 
 
     def show_nearmisses(self, nm):
-        self.nm_label.config(text=f"Near miss: {nm}")
+        self.nm_label.config(text=f"Near miss: {len(nm)}")
         self.nm_label.pack(side=tk.LEFT, padx=5, pady=5)
-        if nm > 0:
-            self.show_collision_controls()
+        if len(nm) > 0:
+            self.show_collision_controls(nm)
 
-    def show_collision_controls(self):
+    def show_collision_controls(self, nms):
         self.collision_controls_frame = tk.Frame(self.collision_controls_frame_parent)
         self.collision_controls_frame.pack(side=tk.LEFT, padx=5, pady=5)
         Label(self.collision_controls_frame, text="Near miss#:").pack(side=tk.LEFT, padx=5, pady=5)
-        self.collision_number_entry = Entry(self.collision_controls_frame)
+        options = {}
+
+        for i,nm in enumerate(nms):
+            options[f"{i+1} ({nm['windowId']})"] = nm['windowId']
+        displays = list(options.keys())
+        self.selected_id = tk.StringVar(value=f"{1} ({nms[0]['windowId']})")
+        self.collision_number_entry = tk.OptionMenu(self.collision_controls_frame, self.selected_id, *displays)
         self.collision_number_entry.pack(side=tk.LEFT, padx=5, pady=5)
-        self.collision_number_entry.insert(0, '1')
         show_collision_button = Button(
-            self.collision_controls_frame, text="Show",command=lambda:self.controller.plot_near_miss(int(self.collision_number_entry.get())))
+            self.collision_controls_frame, text="Show",command=lambda:self.controller.plot_near_miss(int(options[self.selected_id.get()])))
         show_collision_button.pack(side=tk.LEFT, padx=5, pady=5)
 
     def show_loading(self):
