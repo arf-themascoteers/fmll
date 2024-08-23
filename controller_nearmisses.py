@@ -1,3 +1,5 @@
+import tkinter
+
 import db_handler
 import configs
 from shapely.geometry import Polygon, Point
@@ -10,6 +12,7 @@ class NearmissController:
         self.nearmisses_windows = None
         self.nearvehicle_windows = None
         self.networkId = None
+        self.tw = None
 
     def get_window(self, rows, start, tw, windowId):
         merged_frames = []
@@ -83,6 +86,7 @@ class NearmissController:
     def plot(self, f,t,tw,n):
         self.root.show_loading()
         self.networkId = n
+        self.tw = tw
         windows = []
         self.root.canvas.delete("all")
         rows = db_handler.get_data_by_from_to_netId(f,t,n)
@@ -107,13 +111,18 @@ class NearmissController:
 
     def plot_near_miss(self, n):
         self.root.canvas.delete("all")
-        self.root.canvas.create_polygon(configs.get_boundary(self.networkId), outline='yellow', fill='', width=2)
         window = self.get_window_by_id(n)
+        t = f"Timestamp: Between {window['start_timestamp']} and {window['start_timestamp'] + self.tw}"
+        t = (t + f"\nDate time: Between {configs.get_date_str(window['start_timestamp'])} "
+             +f"and {configs.get_date_str(window['start_timestamp'] + self.tw)}")
+        self.root.canvas.create_text(50, 50, text=t, font=("Helvetica", 24), fill="blue", anchor=tkinter.NW)
+        self.root.canvas.create_polygon(configs.get_boundary(self.networkId), outline='yellow', fill='', width=2)
         for actor in window["actors"]:
             x = actor["x"]
             y = actor["y"]
             channelId = actor["channelId"]
             color = 'red' if channelId == 0 else 'green' if channelId == 1 else 'blue' if channelId == 2 else 'black'
             self.root.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color, outline=color)
+            self.root.canvas.create_text(x, y-10, text=actor["objectId"], font=("Helvetica", 7), fill=color, anchor=tkinter.CENTER)
 
 

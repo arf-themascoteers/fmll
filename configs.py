@@ -1,3 +1,6 @@
+import datetime
+
+
 def get_boundary(netId):
     if netId == "CM99V122139007597":
         return [553, 271, 644, 304, 1008, 206, 890, 210]
@@ -13,3 +16,7 @@ def get_boundary_coords(netId):
     for i in range(0, len(xys), 2):
         coords.append((xys[i],xys[i+1]))
     return coords
+
+def get_date_str(timestamp):
+    timestamp = datetime.datetime.fromtimestamp(timestamp / 1000.0)
+    return timestamp.strftime("%Y-%m-%d %H:%M:%S")
