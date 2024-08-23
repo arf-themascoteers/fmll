@@ -2,24 +2,62 @@ import db_handler
 import configs
 from shapely.geometry import Polygon, Point
 
+
 class NearmissController:
     def __init__(self, root):
         self.root = root
-        self.collisions = None
+        self.all_windows = None
+        self.nearmisses_windows = None
+        self.nearvehicle_windows = None
+        self.networkId = None
 
-    def get_paths_within(self, f,t,rows,start=0):
-        to_return = []
+    def get_window(self, rows, start, tw, windowId):
+        merged_frames = []
+        start_timestamp = rows[start][4]
+        end_timestamp = start_timestamp + tw
         i = start
+        end = True
         for i in range(start,len(rows)):
-            timestamp = rows[i][4]
-            if f <= timestamp <= t:
-                to_return.append(rows[i])
-            elif timestamp > t:
+            this_timestamp = rows[i][4]
+            if this_timestamp > end_timestamp:
+                end = False
                 break
-        if i >= len(rows)-1:
-            i = None
-        return to_return, i
-
+            merged_frames.append(rows[i])
+        next_start_index = i
+        if end:
+            next_start_index = None
+        window = {
+            "start_timestamp":start_timestamp,
+            "windowId":windowId,
+            "actors":[],
+            "hasVehicle": False,
+            "hasPed": False,
+            "hasBicycle": False,
+            "isNearMiss": False,
+            "isVehicleNearCollision": False
+        }
+        for mf in merged_frames:
+            channelId = mf[2]
+            if channelId == 0:
+                window["hasVehicle"] = True
+            elif channelId == 1:
+                window["hasPed"] = True
+            else:
+                window["hasBicycle"] = True
+            actor = {
+                "x" : mf[0],
+                "y" : mf[1],
+                "channelId": channelId,
+                "objectId": mf[3],
+            }
+            window["actors"].append(actor)
+        if window["hasVehicle"] and window["hasPed"]:
+            window["isNearMiss"] = True
+        vehicleIds = [actor["objectId"] for actor in window["actors"] if actor["channelId"] == 0]
+        vehicleIds = set(vehicleIds)
+        if len(vehicleIds) > 1:
+            window["isVehicleNearCollision"] = True
+        return window, next_start_index
 
     def keep_crossing_only(self, rows, networkId):
         filtered = []
@@ -39,28 +77,43 @@ class NearmissController:
         peds = [row for row in rows if (row[2] == 1)]
         all = vehicles + peds
         collision = (len(vehicles) != 0 and len(peds) != 0)
-        return True, all
+        return collision, all
 
 
     def plot(self, f,t,tw,n):
         self.root.show_loading()
-        collisions = []
+        self.networkId = n
+        windows = []
         self.root.canvas.delete("all")
         rows = db_handler.get_data_by_from_to_netId(f,t,n)
         rows = self.keep_crossing_only(rows,n)
-        start = f
-        end = start + tw
         start_index = 0
-        while end <= t and start_index is not None:
-            filtered_rows, start_index = self.get_paths_within(start, end, rows, start_index)
-            collision, actors = self.get_collision(filtered_rows)
-            if collision:
-                collisions.append(actors)
-            start = end+1
-            end = start + tw
-        self.collisions = collisions
-        self.root.show_nearmisses(len(self.collisions))
+        windowId = 1
+        while start_index is not None and start_index < len(rows):
+            window, start_index = self.get_window(rows, start_index, tw, windowId)
+            windows.append(window)
+            windowId = windowId + 1
+        self.all_windows = windows
+        self.nearmisses_windows = [window for window in self.all_windows if window["isNearMiss"]]
+        self.nearvehicle_windows = [window for window in self.all_windows if window["isVehicleNearCollision"]]
+        self.root.show_nearmisses(len(self.nearmisses_windows))
+
+    def get_window_by_id(self, windowId):
+        # for window in self.all_windows:
+        #     if window["windowId"] == windowId:
+        #         return window
+        # return None
+        return self.nearmisses_windows[windowId-1]
 
     def plot_near_miss(self, n):
-        collision = self.collisions[n-1]
-        print(collision)
+        self.root.canvas.delete("all")
+        self.root.canvas.create_polygon(configs.get_boundary(self.networkId), outline='yellow', fill='', width=2)
+        window = self.get_window_by_id(n)
+        for actor in window["actors"]:
+            x = actor["x"]
+            y = actor["y"]
+            channelId = actor["channelId"]
+            color = 'red' if channelId == 0 else 'green' if channelId == 1 else 'blue' if channelId == 2 else 'black'
+            self.root.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color, outline=color)
+
+

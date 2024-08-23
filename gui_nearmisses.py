@@ -22,12 +22,12 @@ class Application:
         Label(self.buttons_container, text="From:").pack(side=tk.LEFT, padx=5, pady=5)
         self.from_entry = Entry(self.buttons_container)
         self.from_entry.pack(side=tk.LEFT, padx=5, pady=5)
-        self.from_entry.insert(0, '1718845200000')
+        self.from_entry.insert(0, '1716854905922')
 
         Label(self.buttons_container, text="To:").pack(side=tk.LEFT, padx=5, pady=5)
         self.to_entry = Entry(self.buttons_container)
         self.to_entry.pack(side=tk.LEFT, padx=5, pady=5)
-        self.to_entry.insert(0, '1719845200000')
+        self.to_entry.insert(0, '1723432920411')
 
         Label(self.buttons_container, text="NetId:").pack(side=tk.LEFT, padx=5, pady=5)
         self.netId_entry = Entry(self.buttons_container)
