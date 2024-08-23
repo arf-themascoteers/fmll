@@ -6,7 +6,6 @@ import threading
 
 class Application:
     def __init__(self):
-        self.collisions = None
         self.collision_controls_frame = None
         self.controller = controller_nearmisses.NearmissController(self)
         root = tk.Tk()
@@ -15,6 +14,10 @@ class Application:
 
         self.buttons_container = tk.Frame(root, background="grey")
         self.buttons_container.pack(side=tk.TOP)
+
+        self.collision_controls_frame_parent = tk.Frame(root)
+        self.collision_controls_frame_parent.pack(side=tk.TOP)
+
 
         self.canvas_container = tk.Frame(root, background="blue")
         self.canvas_container.pack(side=tk.TOP)
@@ -67,7 +70,7 @@ class Application:
             self.show_collision_controls()
 
     def show_collision_controls(self):
-        self.collision_controls_frame = tk.Frame(self.buttons_container)
+        self.collision_controls_frame = tk.Frame(self.collision_controls_frame_parent)
         self.collision_controls_frame.pack(side=tk.LEFT, padx=5, pady=5)
         Label(self.collision_controls_frame, text="Near miss#:").pack(side=tk.LEFT, padx=5, pady=5)
         self.collision_number_entry = Entry(self.collision_controls_frame)
