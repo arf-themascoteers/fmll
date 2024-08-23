@@ -100,16 +100,15 @@ class NearmissController:
         self.all_windows = windows
         self.nearmisses_windows = [window for window in self.all_windows if window["isNearMiss"]]
         self.nearvehicle_windows = [window for window in self.all_windows if window["isVehicleNearCollision"]]
-        self.root.show_nearmisses(self.nearmisses_windows)
+        self.root.show_windows(self.all_windows, self.nearmisses_windows, self.nearvehicle_windows)
 
     def get_window_by_id(self, windowId):
         for window in self.all_windows:
             if window["windowId"] == windowId:
                 return window
         return None
-        #return self.nearmisses_windows[windowId-1]
 
-    def plot_near_miss(self, n):
+    def plot_window(self, n):
         self.root.canvas.delete("all")
         window = self.get_window_by_id(n)
         t = f"Timestamp: Between {window['start_timestamp']} and {window['start_timestamp'] + self.tw}"
