@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import Label, Entry, Button
 import controller_nearmisses
 import threading
+from tkinter import ttk
 
 
 class Application:
@@ -103,7 +104,7 @@ class Application:
             options[f"{i+1} ({nm['windowId']})"] = nm['windowId']
         displays = list(options.keys())
         self.selected_id = tk.StringVar(value=f"{1} ({nms[0]['windowId']})")
-        self.collision_number_entry = tk.OptionMenu(self.collision_controls_frame, self.selected_id, *displays)
+        self.collision_number_entry = ttk.Combobox(self.collision_controls_frame, textvariable=self.selected_id, values=displays)
         self.collision_number_entry.pack(side=tk.LEFT, padx=5, pady=5)
         show_collision_button = Button(
             self.collision_controls_frame, text="Show near miss",command=lambda:self.controller.plot_window(int(options[self.selected_id.get()])))
@@ -122,7 +123,7 @@ class Application:
             options[f"{i+1} ({nm['windowId']})"] = nm['windowId']
         displays = list(options.keys())
         self.selected_vehicle_windiow_id = tk.StringVar(value=f"{1} ({vehicle_windows[0]['windowId']})")
-        self.vehicle_number_entry = tk.OptionMenu(self.vehicle_controls_frame, self.selected_vehicle_windiow_id, *displays)
+        self.vehicle_number_entry = ttk.Combobox(self.vehicle_controls_frame, textvariable=self.selected_vehicle_windiow_id, values=displays)
         self.vehicle_number_entry.pack(side=tk.LEFT, padx=5, pady=5)
         show_collision_button = Button(
             self.vehicle_controls_frame, text="Show near vehicle collision",command=lambda:self.controller.plot_window(int(options[self.selected_vehicle_windiow_id.get()])))
