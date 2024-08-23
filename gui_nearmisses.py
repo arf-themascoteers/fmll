@@ -7,10 +7,13 @@ import threading
 class Application:
     def __init__(self):
         
-        self.windows_controls_frame = None
+        self.window_controls_frame = None
         self.collision_controls_frame = None
         self.vehicle_controls_frame = None
-        
+
+        self.nl1 = None
+        self.nl2 = None
+
         self.controller = controller_nearmisses.NearmissController(self)
         root = tk.Tk()
         root.title("FMLL")
@@ -67,36 +70,32 @@ class Application:
         root.mainloop()
 
     def show_windows(self, all_windows, nm_windows, vc_windows):
-        self.status_label.config(text=f"Done")
         self.status_label.pack(side=tk.LEFT, padx=5, pady=5)
         self.show_window_controls(all_windows)
         self.show_nearmiss_controls(nm_windows)
         self.show_vehicle_controls(vc_windows)
+        self.status_label.config(text=f"Done")
 
     def show_window_controls(self, all_windows):
         if len(all_windows) == 0:
             return
-        Label(self.window_controls_parent, text=f"Total windows: {len(all_windows)}").pack(side=tk.LEFT, padx=5, pady=5)
         self.window_controls_frame = tk.Frame(self.window_controls_parent)
-        self.window_controls_frame.pack(side=tk.LEFT, padx=5, pady=5)
+        self.window_controls_frame.pack(side=tk.TOP, padx=5, pady=5)
+        Label(self.window_controls_frame, text=f"Total windows: {len(all_windows)}").pack(side=tk.LEFT, padx=5, pady=5)
         Label(self.window_controls_frame, text="Window#:").pack(side=tk.LEFT, padx=5, pady=5)
-        options = []
-
-        for i,nm in enumerate(all_windows):
-            options.append(nm['windowId'])
-        self.selected_window_id = tk.StringVar(value=f"1")
-        self.window_number_entry = tk.OptionMenu(self.window_controls_frame, self.selected_window_id, *options)
+        self.window_number_entry = Entry(self.window_controls_frame)
         self.window_number_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        self.window_number_entry.insert(0, '1')
         show_collision_button = Button(
-            self.window_controls_frame, text="Show window",command=lambda:self.controller.plot_window(int(self.selected_window_id.get())))
+            self.window_controls_frame, text="Show window",command=lambda:self.controller.plot_window(int(self.window_number_entry.get())))
         show_collision_button.pack(side=tk.LEFT, padx=5, pady=5)
 
     def show_nearmiss_controls(self, nms):
         if len(nms) == 0:
             return
-        Label(self.window_controls_parent, text=f"Total near miss: {len(nms)}").pack(side=tk.LEFT, padx=5, pady=5)
         self.collision_controls_frame = tk.Frame(self.window_controls_parent)
-        self.collision_controls_frame.pack(side=tk.LEFT, padx=5, pady=5)
+        self.collision_controls_frame.pack(side=tk.TOP, padx=5, pady=5)
+        Label(self.collision_controls_frame, text=f"Total near miss: {len(nms)}").pack(side=tk.LEFT, padx=5, pady=5)
         Label(self.collision_controls_frame, text="Near miss#:").pack(side=tk.LEFT, padx=5, pady=5)
         options = {}
 
@@ -113,9 +112,9 @@ class Application:
     def show_vehicle_controls(self, vehicle_windows):
         if len(vehicle_windows) == 0:
             return
-        Label(self.window_controls_parent, text=f"Total near vehicle collision: {len(vehicle_windows)}").pack(side=tk.LEFT, padx=5, pady=5)
         self.vehicle_controls_frame = tk.Frame(self.window_controls_parent)
-        self.vehicle_controls_frame.pack(side=tk.LEFT, padx=5, pady=5)
+        self.vehicle_controls_frame.pack(side=tk.TOP, padx=5, pady=5)
+        Label(self.vehicle_controls_frame, text=f"Total near vehicle collision: {len(vehicle_windows)}").pack(side=tk.LEFT, padx=5, pady=5)
         Label(self.vehicle_controls_frame, text="Near vehicle collision#:").pack(side=tk.LEFT, padx=5, pady=5)
         options = {}
 
@@ -134,9 +133,9 @@ class Application:
         self.status_label.pack(side=tk.LEFT, padx=5, pady=5)
 
     def reset_window_controls(self):
-        if self.windows_controls_frame is not None:
-            self.windows_controls_frame.destroy()
-            self.windows_controls_frame = None
+        if self.window_controls_frame is not None:
+            self.window_controls_frame.destroy()
+            self.window_controls_frame = None
 
         if self.collision_controls_frame is not None:
             self.collision_controls_frame.destroy()
@@ -145,6 +144,14 @@ class Application:
         if self.vehicle_controls_frame is not None:
             self.vehicle_controls_frame.destroy()
             self.vehicle_controls_frame = None
+
+        if self.nl1 is not None:
+            self.nl1.destroy()
+            self.nl1 = None
+
+        if self.nl2 is not None:
+            self.nl2.destroy()
+            self.nl2 = None
 
     def button_clicked(self):
         self.reset_window_controls()
