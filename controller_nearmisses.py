@@ -18,17 +18,15 @@ class NearmissController:
         merged_frames = []
         start_timestamp = rows[start][4]
         end_timestamp = start_timestamp + tw
-        i = start
-        end = True
+        next_start_index = -1
         for i in range(start,len(rows)):
             this_timestamp = rows[i][4]
+            if next_start_index == -1 and this_timestamp > start_timestamp:
+                next_start_index = i
             if this_timestamp > end_timestamp:
-                end = False
                 break
             merged_frames.append(rows[i])
-        next_start_index = i
-        if end:
-            next_start_index = None
+
         window = {
             "start_timestamp":start_timestamp,
             "windowId":windowId,
@@ -93,7 +91,7 @@ class NearmissController:
         rows = self.keep_crossing_only(rows,n)
         start_index = 0
         windowId = 1
-        while start_index is not None and start_index < len(rows):
+        while start_index != -1 and start_index < len(rows):
             window, start_index = self.get_window(rows, start_index, tw, windowId)
             windows.append(window)
             windowId = windowId + 1
