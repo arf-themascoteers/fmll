@@ -27,10 +27,11 @@ def get_data_by_netId(n):
     cur, conn = create_connection()
     cur.execute('''
         SELECT x, y, channelId, objectId, timestamp FROM path 
-        WHERE networkId = ?
+        WHERE networkId = ? 
         ORDER BY timestamp
-
+        
     ''', (n,))
+    #AND timestamp BETWEEN 1716818400000 AND 1717164000000
     rows = cur.fetchall()
     close_connection(conn)
     return rows

@@ -89,13 +89,13 @@ def is_within_time_range(timestamp,from_hr, from_min, to_hr, to_min):
 def is_within_drop_off(timestamp):
     if is_off_day(timestamp):
         return False
-    return is_within_time_range(timestamp,8,35,8,50)
+    return is_within_time_range(timestamp,8,0,9,30)
 
 
 def is_within_pick_up(timestamp):
     if is_off_day(timestamp):
         return False
-    return is_within_time_range(timestamp,15,15,15,30)
+    return is_within_time_range(timestamp,14,30,16,0)
 
 
 def is_within_pick_up_or_drop_off(timestamp):
@@ -120,9 +120,11 @@ if __name__ == "__main__":
     # d1 = date_str_to_obj("2024-08-29")
     # d2 = date_str_to_obj("2024-08-29")
     # print(d1==d2)
-    ep1 = to_epoch_milliseconds("2024-08-29 21:56:46")
-    print(is_within_drop_off(ep1))
-    ep1 = to_epoch_milliseconds("2024-08-29 08:49:46")
-    print(is_within_drop_off(ep1))
-    ep1 = to_epoch_milliseconds("2024-06-01 08:49:46")
-    print(is_within_drop_off(ep1))
+    # ep1 = to_epoch_milliseconds("2024-08-29 21:56:46")
+    # print(is_within_drop_off(ep1))
+    # ep1 = to_epoch_milliseconds("2024-08-29 08:49:46")
+    # print(is_within_drop_off(ep1))
+    # ep1 = to_epoch_milliseconds("2024-06-01 08:49:46")
+    # print(is_within_drop_off(ep1))
+    print(date_to_epoch("2024-05-28"))
+    print(date_to_epoch("2024-06-01"))
