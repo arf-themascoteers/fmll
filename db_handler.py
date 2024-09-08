@@ -29,6 +29,7 @@ def get_data_by_netId(n):
         SELECT x, y, channelId, objectId, timestamp FROM path 
         WHERE networkId = ?
         ORDER BY timestamp
+
     ''', (n,))
     rows = cur.fetchall()
     close_connection(conn)

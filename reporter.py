@@ -1,8 +1,12 @@
 import tkinter
-
+import datetime
+from datetime import datetime as dtx
+from datetime import timedelta
 import db_handler
 import configs
 from shapely.geometry import Polygon, Point
+from collections import defaultdict
+import csv
 
 
 class Reporter:
@@ -15,10 +19,10 @@ class Reporter:
         merged_frames = []
         start_timestamp = rows[start]["timestamp"]
         end_timestamp = start_timestamp + self.time_window
-        next_start_index = -1
+        next_start_index = None
         for i in range(start,len(rows)):
             this_timestamp = rows[i]["timestamp"]
-            if next_start_index == -1 and this_timestamp > start_timestamp:
+            if next_start_index is None and this_timestamp > start_timestamp:
                 next_start_index = i
             if this_timestamp > end_timestamp:
                 break
@@ -31,8 +35,10 @@ class Reporter:
             "hasPed": False,
             "hasBicycle": False,
             "isNearMiss": False,
-            "isVehicleNearCollision": False
+            "isVehicleNearCollision": False,
+            "date":self.timestamp_to_date(start_timestamp)
         }
+
         for mf in merged_frames:
             channelId = mf[2]
             if channelId == 0:
@@ -59,45 +65,98 @@ class Reporter:
     def mark_crossing(self, rows):
         boundary = configs.get_boundary_coords(self.networkId)
         polygon = Polygon(boundary)
+        filtered_rows = []
         for i,r in enumerate(rows):
             x = r["x"]
             y = r["y"]
             point = Point(x,y)
             if polygon.contains(point):
-                rows[i]["crossing"] = True
-            else:
-                rows[i]["crossing"] = False
-        return rows
-
-    def mark_time(self, rows):
-        for i,r in enumerate(rows):
-            rows[i]["busy_hour"] = False
-            if configs.is_weekend(r["timestamp"]):
-                rows[i]["weekend"] = True
-            else:
-                rows[i]["weekend"] = False
-                if configs.is_busy_hour(r["timestamp"]):
-                    rows[i]["busy_hour"] = True
-        return rows
-
-    def get_collision(self, rows):
-        vehicles = [row for row in rows if (row[2] == 0)]
-        peds = [row for row in rows if (row[2] == 1)]
-        all = vehicles + peds
-        collision = (len(vehicles) != 0 and len(peds) != 0)
-        return collision, all
+                filtered_rows.append(r)
+        return filtered_rows
 
     def report(self):
         self.all_windows = []
         rows = db_handler.get_data_by_netId(self.networkId)
         rows = self.mark_crossing(rows)
-        rows = self.mark_time(rows)
+        print("Done crossing")
+        print(len(rows))
         start_index = 0
         windowId = 0
         while start_index is not None and start_index < len(rows):
+            print(start_index)
             window, start_index = self.create_window(rows, start_index, windowId)
             self.all_windows.append(window)
             windowId = windowId + 1
+        print("Done windows")
+        print(len(rows))
+        ag_windows = self.ag_windows()
+        self.export_to_csv(ag_windows,"report.csv")
+
+    def ag_windows(self):
+        aggregated_data = []
+        last_date = None
+
+        sorted(self.all_windows, key=lambda x: x["date"])
+        for window in self.all_windows:
+            if last_date is None or window["date"] != last_date["date"]:
+                if last_date is not None:
+                    aggregated_data.append(last_date)
+                last_date = {
+                    "date": window["date"],
+                    "totalNearmiss":0,
+                    "totalVehicleNearCol":0,
+                    "is_holiday": 0
+                }
+            if window["isNearMiss"]:
+                last_date["totalNearmiss"] += 1
+
+            if window["isVehicleNearCollision"]:
+                last_date["totalVehicleNearCol"] += 1
+
+            if configs.is_off_day(window["start_timestamp"]):
+                last_date["is_holiday"] = 1
+
+
+
+        current_date = aggregated_data[0]["date"]
+        end_date = aggregated_data[-1]["date"]
+
+        while current_date < end_date:
+            if current_date not in aggregated_data:
+                if not self.has_date(aggregated_data, current_date):
+                    dt = {"date": current_date, "totalNearmiss": 0,
+                                            "totalVehicleNearCol":0,
+                          "is_holiday":int(configs.is_off_day_day(current_date))}
+
+                    aggregated_data.append(dt)
+            current_date = self.convert_to_date(current_date) + timedelta(days=1)
+            current_date = self.convert_to_str(current_date)
+            print(current_date)
+        sorted(aggregated_data, key=lambda x: x["date"])
+        return aggregated_data
+
+    def has_date(self, dates, current_date):
+        for date in dates:
+            if date["date"] == current_date:
+                return True
+        return False
+
+    def get_next_day(self, date_obj):
+        return date_obj + timedelta(days=1)
+
+    def export_to_csv(self, dates, filename):
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=["date", "totalNearmiss","totalVehicleNearCol","is_holiday"])
+            writer.writeheader()
+            writer.writerows(dates)
+
+    def timestamp_to_date(self, timestamp):
+        return datetime.datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
+
+    # def get_13_digit_epoch(self, timestamp):
+    #     dt_object = self.timestamp_to_date(timestamp)
+    #     dt_object = self.convert_to_date(dt_object)
+    #     return int(dt_object.timestamp() * 1000)
 
     def get_window_by_id(self, windowId):
         for window in self.all_windows:
@@ -105,22 +164,11 @@ class Reporter:
                 return window
         return None
 
-    def plot_window(self, n):
-        self.root.canvas.delete("all")
-        window = self.get_window_by_id(n)
-        t = f"Timestamp: Between {window['start_timestamp']} and {window['start_timestamp'] + self.time_window}"
-        t = (t + f"\nDate time: Between {configs.get_date_str(window['start_timestamp'])} "
-             +f"and {configs.get_date_str(window['start_timestamp'] + self.time_window)}")
-        self.root.canvas.create_text(50, 50, text=t, font=("Helvetica", 24), fill="blue", anchor=tkinter.NW)
-        self.root.canvas.create_polygon(configs.get_boundary(self.networkId), outline='yellow', fill='', width=2)
-        for actor in window["actors"]:
-            x = actor["x"]
-            y = actor["y"]
-            channelId = actor["channelId"]
-            color = 'red' if channelId == 0 else 'green' if channelId == 1 else 'blue' if channelId == 2 else 'black'
-            self.root.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color, outline=color)
-            self.root.canvas.create_text(x, y-10, text=actor["objectId"], font=("Helvetica", 7), fill=color, anchor=tkinter.CENTER)
+    def convert_to_date(self, date_string):
+        return dtx.strptime(date_string, "%Y-%m-%d").date()
 
+    def convert_to_str(self, date_obj):
+        return date_obj.strftime("%Y-%m-%d")
 
 if __name__ == '__main__':
     n = "CM99V122139007597"

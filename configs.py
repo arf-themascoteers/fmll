@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 holidays = [
     ["2024-01-01","2024-01-29"],
@@ -35,33 +35,28 @@ def get_boundary_coords(netId):
         coords.append((xys[i],xys[i+1]))
     return coords
 
-def get_date_str(timestamp):
-    timestamp = datetime.datetime.fromtimestamp(timestamp / 1000.0)
-    return timestamp.strftime("%Y-%m-%d %H:%M:%S")
-
-def is_drop_off(epoch_ms):
-    dt = datetime.datetime.fromtimestamp(epoch_ms / 1000.0)
-    return dt.time() >= datetime.time(8, 0) and dt.time() <= datetime.time(9, 30)
-
-def is_pick_up(epoch_ms):
-    dt = datetime.datetime.fromtimestamp(epoch_ms / 1000.0)
-    return dt.time() >= datetime.time(14, 30) and dt.time() <= datetime.time(16, 0)
-
-def is_busy_hour(timestamp):
-    return is_pick_up(timestamp) or is_drop_off(timestamp)
-
-def is_weekend(epoch_ms):
-    dt = datetime.datetime.fromtimestamp(epoch_ms / 1000.0)
+def from_timestamp_to_date(timestamp):
+    return datetime.fromtimestamp(timestamp / 1000.0)
+def is_weekend(dt):
+    dt = datetime.fromtimestamp(dt / 1000.0)
     return dt.weekday() >= 5
 
-def is_in_holiday_range(epoch_ms):
-    dt = datetime.datetime.fromtimestamp(epoch_ms / 1000.0).date()
+def is_in_holiday_range(dt):
+    dt = datetime.fromtimestamp(dt / 1000.0).date()
     for start, end in holidays:
-        start_date = datetime.datetime.strptime(start, "%Y-%m-%d").date()
-        end_date = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+        start_date = datetime.strptime(start, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end, "%Y-%m-%d").date()
         if start_date <= dt <= end_date:
             return True
     return False
 
-def is_off_day(timestamp):
+def is_off_day(dt):
+    return is_weekend(dt) or is_in_holiday_range(dt)
+
+def is_off_day_day(date_obj):
+    date_obj = datetime.strptime(date_obj, '%Y-%m-%d')
+    timestamp = int(date_obj.timestamp() * 1000)
     return is_weekend(timestamp) or is_in_holiday_range(timestamp)
+
+if __name__ == "__main__":
+    print(is_off_day(1716879591644))
