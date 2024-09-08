@@ -14,7 +14,7 @@ class Jaywalking_Reporter:
         self.all_windows = None
         self.time_filter = time_filter #None,P,D
         self.file_name = "jw"
-        postfix = "_PD"
+        postfix = "PD"
         if self.time_filter is not None:
             postfix = self.time_filter
         self.file_name = self.file_name + "_" + postfix + ".csv"
