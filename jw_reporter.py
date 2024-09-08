@@ -56,16 +56,21 @@ class Jaywalking_Reporter:
 
         is_same = False
 
-        if Jaywalking_Reporter.if_similar_window(last_window, window):
+        if self.if_similar_window(last_window, window):
             is_same = True
             last_window["length"] = last_window["length"] + 1
             window = last_window
 
         return window, next_start_index, is_same
 
-    @staticmethod
-    def if_similar_window(window1, window2):
+    def if_similar_window(self, window1, window2):
         if window1 is None or window2 is None:
+            return False
+        st1 = window1["start_timestamp"]
+        st2 = window2["start_timestamp"]
+        last = st1 + self.time_window*window1["length"]
+        diff = st2 - last
+        if diff > 5000:
             return False
         if window1["hasJW"] == window2["hasJW"]:
             return True
@@ -84,13 +89,15 @@ class Jaywalking_Reporter:
         return filtered_rows
 
     def filter_time(self, rows):
+        if self.time_filter == "A":
+            return rows
         filtered_rows = []
         fun = None
         if self.time_filter == "P":
             fun = configs.is_within_pick_up
         elif self.time_filter == "D":
             fun = configs.is_within_drop_off
-        elif self.time_filter == "A":
+        elif self.time_filter == "O":
             fun = configs.is_not_within_pick_up_or_drop_off
         elif self.time_filter is None:
             fun = configs.is_within_pick_up_or_drop_off
@@ -105,7 +112,9 @@ class Jaywalking_Reporter:
         self.all_windows = []
         rows = db_handler.get_data_by_netId(self.networkId)
         rows = self.filter_time(rows)
+        print("Filter time",len(rows))
         rows = self.mark_crossing(rows)
+        print("Filter crossing",len(rows))
         start_index = 0
         windowId = 0
         window = None
@@ -114,6 +123,7 @@ class Jaywalking_Reporter:
             if not is_same:
                 self.all_windows.append(window)
                 windowId = windowId + 1
+        print("Windows", len(self.all_windows))
         ag_windows = self.ag_windows()
         self.export_to_csv(ag_windows,self.file_name)
 
@@ -191,7 +201,8 @@ class Jaywalking_Reporter:
 
 if __name__ == '__main__':
     n = "CM99V122139007597"
-    for f in [None,"P","D","A"]:
+    #for f in [None,"P","D","A"]:
+    for f in ["A"]:
         reporter = Jaywalking_Reporter(n,time_filter=f)
         reporter.report()
         print(f"Done {f}")

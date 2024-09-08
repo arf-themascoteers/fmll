@@ -14,7 +14,7 @@ class NearMisses_Reporter:
         self.all_windows = None
         self.time_filter = time_filter #None, P,D,PD,O
         self.file_name = "nm"
-        postfix = "_A"
+        postfix = "A"
         if self.time_filter is not None:
             postfix = self.time_filter
         self.file_name = self.file_name +  "_" + postfix + ".csv"
@@ -72,16 +72,21 @@ class NearMisses_Reporter:
 
         is_same = False
 
-        if NearMisses_Reporter.if_similar_window(last_window, window):
+        if self.if_similar_window(last_window, window):
             is_same = True
             last_window["length"] = last_window["length"] + 1
             window = last_window
 
         return window, next_start_index, is_same
 
-    @staticmethod
-    def if_similar_window(window1, window2):
+    def if_similar_window(self, window1, window2):
         if window1 is None or window2 is None:
+            return False
+        st1 = window1["start_timestamp"]
+        st2 = window2["start_timestamp"]
+        last = st1 + self.time_window*window1["length"]
+        diff = st2 - last
+        if diff > 5000:
             return False
         if window1["isNearMiss"] == window2["isNearMiss"] and window1["isVehicleNearCollision"] == window2["isVehicleNearCollision"]:
             return True
@@ -214,8 +219,7 @@ class NearMisses_Reporter:
 
 if __name__ == '__main__':
     n = "CM99V122139007597"
-    #for f in [None,"P","D","PD","O"]:
-    for f in ["O"]:
+    for f in [None,"P","D","PD","O"]:
         reporter = NearMisses_Reporter(n,time_filter=f)
         reporter.report()
         print(f"Done {f}")
