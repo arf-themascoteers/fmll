@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import time as dtime
 import time
 
 holidays = [
@@ -78,6 +79,37 @@ def format_date(date_obj):
     return date_obj.strftime('%Y-%m-%d')
 
 
+def is_within_time_range(timestamp,from_hr, from_min, to_hr, to_min):
+    dt = datetime.fromtimestamp(timestamp / 1000.0)
+    start_time = dtime(from_hr, from_min)
+    end_time = dtime(to_hr, to_min)
+    return start_time <= dt.time() <= end_time
+
+
+def is_within_drop_off(timestamp):
+    if is_off_day(timestamp):
+        return False
+    return is_within_time_range(timestamp,8,35,8,50)
+
+
+def is_within_pick_up(timestamp):
+    if is_off_day(timestamp):
+        return False
+    return is_within_time_range(timestamp,15,15,15,30)
+
+
+def is_within_pick_up_or_drop_off(timestamp):
+    return is_within_pick_up(timestamp) or is_within_drop_off(timestamp)
+
+def is_not_within_pick_up_or_drop_off(timestamp):
+    return not is_within_pick_up_or_drop_off(timestamp)
+
+
+def to_epoch_milliseconds(date_str):
+    dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+    return int(dt.timestamp() * 1000)
+
+
 if __name__ == "__main__":
     #print(is_off_day(1716879591644))
     # ts = 1716879591644
@@ -85,7 +117,12 @@ if __name__ == "__main__":
     # print(ttd)
     # ts = date_to_epoch(ttd)
     # print(ts)
-    d1 = date_str_to_obj("2024-08-29")
-    d2 = date_str_to_obj("2024-08-29")
-    print(d1==d2)
-
+    # d1 = date_str_to_obj("2024-08-29")
+    # d2 = date_str_to_obj("2024-08-29")
+    # print(d1==d2)
+    ep1 = to_epoch_milliseconds("2024-08-29 21:56:46")
+    print(is_within_drop_off(ep1))
+    ep1 = to_epoch_milliseconds("2024-08-29 08:49:46")
+    print(is_within_drop_off(ep1))
+    ep1 = to_epoch_milliseconds("2024-06-01 08:49:46")
+    print(is_within_drop_off(ep1))

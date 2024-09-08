@@ -7,11 +7,17 @@ from shapely.geometry import Polygon, Point
 import csv
 
 
-class Reporter:
-    def __init__(self, netId="CM99V122139007597", time_window=1000):
+class Jaywalking_Reporter:
+    def __init__(self, netId="CM99V122139007597", time_window=1000, time_filter=None):
         self.networkId = netId
         self.time_window = time_window
         self.all_windows = None
+        self.time_filter = time_filter #None,P,D
+        self.file_name = "jw"
+        postfix = "_PD"
+        if self.time_filter is not None:
+            postfix = self.time_filter
+        self.file_name = self.file_name + postfix + ".csv"
 
     def create_window(self, rows, start, windowId, last_window):
         merged_frames = []
@@ -32,23 +38,13 @@ class Reporter:
             "windowId":windowId,
             "length": 1,
             "actors":[],
-            "hasVehicle": False,
-            "hasPed": False,
-            "hasBicycle": False,
-            "isNearMiss": False,
-            "isVehicleNearCollision": False,
+            "hasJW": True,
             "date":date_string,
             "date_obj": date_obj
         }
 
         for mf in merged_frames:
             channelId = mf[2]
-            if channelId == 0:
-                window["hasVehicle"] = True
-            elif channelId == 1:
-                window["hasPed"] = True
-            else:
-                window["hasBicycle"] = True
             actor = {
                 "x" : mf[0],
                 "y" : mf[1],
@@ -57,16 +53,10 @@ class Reporter:
             }
             window["actors"].append(actor)
 
-        if window["hasVehicle"] and window["hasPed"]:
-            window["isNearMiss"] = True
-        vehicleIds = [actor["objectId"] for actor in window["actors"] if actor["channelId"] == 0]
-        vehicleIds = set(vehicleIds)
-        if len(vehicleIds) > 1:
-            window["isVehicleNearCollision"] = True
 
         is_same = False
 
-        if Reporter.if_similar_window(last_window, window):
+        if Jaywalking_Reporter.if_similar_window(last_window, window):
             is_same = True
             last_window["length"] = last_window["length"] + 1
             window = last_window
@@ -77,7 +67,7 @@ class Reporter:
     def if_similar_window(window1, window2):
         if window1 is None or window2 is None:
             return False
-        if window1["isNearMiss"] == window2["isNearMiss"] and window1["isVehicleNearCollision"] == window2["isVehicleNearCollision"]:
+        if window1["hasJW"] == window2["hasJW"]:
             return True
         return False
 
@@ -89,24 +79,41 @@ class Reporter:
             x = r["x"]
             y = r["y"]
             point = Point(x,y)
-            if polygon.contains(point):
+            if not polygon.contains(point) and r["channelId"] == 1:
                 filtered_rows.append(r)
+        return filtered_rows
+
+    def filter_time(self, rows):
+        filtered_rows = []
+        fun = None
+        if self.time_filter == "P":
+            fun = configs.is_within_pick_up
+        elif self.time_filter == "D":
+            fun = configs.is_within_drop_off
+        elif self.time_filter is None:
+            fun = configs.is_within_pick_up_or_drop_off
+
+        for row in rows:
+            if fun(row["timestamp"]):
+                filtered_rows.append(row)
+
         return filtered_rows
 
     def report(self):
         self.all_windows = []
         rows = db_handler.get_data_by_netId(self.networkId)
+        rows = self.filter_time(rows)
         rows = self.mark_crossing(rows)
         start_index = 0
         windowId = 0
         window = None
         while start_index is not None and start_index < len(rows):
             window, start_index, is_same = self.create_window(rows, start_index, windowId, window)
-            self.all_windows.append(window)
             if not is_same:
+                self.all_windows.append(window)
                 windowId = windowId + 1
         ag_windows = self.ag_windows()
-        self.export_to_csv(ag_windows,"nm.csv")
+        self.export_to_csv(ag_windows,self.file_name)
 
     def ag_windows(self):
         aggregated_data = []
@@ -120,15 +127,11 @@ class Reporter:
                 last_date = {
                     "date": window["date"],
                     "date_obj": window["date_obj"],
-                    "totalNearmiss":0,
-                    "totalVehicleNearCol":0,
+                    "totalJW":0,
                     "is_holiday": 0
                 }
-            if window["isNearMiss"]:
-                last_date["totalNearmiss"] += 1
-
-            if window["isVehicleNearCollision"]:
-                last_date["totalVehicleNearCol"] += 1
+            if window["hasJW"]:
+                last_date["totalJW"] += 1
 
             if configs.is_off_day(window["start_timestamp"]):
                 last_date["is_holiday"] = 1
@@ -144,8 +147,7 @@ class Reporter:
                 dt = {
                         "date": configs.format_date(current_date),
                         "date_obj": current_date,
-                        "totalNearmiss": 0,
-                        "totalVehicleNearCol":0,
+                        "totalJW": 0,
                         "is_holiday":int(configs.is_off_day_day(current_date)),
                       }
 
@@ -168,7 +170,7 @@ class Reporter:
         for d in dates:
             d.pop('date_obj', None)
         with open(filename, mode='w', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=["date", "totalNearmiss","totalVehicleNearCol","is_holiday"])
+            writer = csv.DictWriter(file, fieldnames=["date", "totalJW","is_holiday"])
             writer.writeheader()
             writer.writerows(dates)
 
@@ -187,5 +189,7 @@ class Reporter:
 
 if __name__ == '__main__':
     n = "CM99V122139007597"
-    reporter = Reporter(n)
-    reporter.report()
+    for f in [None,"P","D"]:
+        reporter = Jaywalking_Reporter(n,time_filter=f)
+        reporter.report()
+        print(f"Done {f}")
