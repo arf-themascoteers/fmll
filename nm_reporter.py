@@ -17,7 +17,7 @@ class NearMisses_Reporter:
         postfix = "_A"
         if self.time_filter is not None:
             postfix = self.time_filter
-        self.file_name = self.file_name + postfix + ".csv"
+        self.file_name = self.file_name +  "_" + postfix + ".csv"
 
     def create_window(self, rows, start, windowId, last_window):
         merged_frames = []

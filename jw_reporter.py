@@ -17,7 +17,7 @@ class Jaywalking_Reporter:
         postfix = "_PD"
         if self.time_filter is not None:
             postfix = self.time_filter
-        self.file_name = self.file_name + postfix + ".csv"
+        self.file_name = self.file_name + "_" + postfix + ".csv"
 
     def create_window(self, rows, start, windowId, last_window):
         merged_frames = []
@@ -90,6 +90,8 @@ class Jaywalking_Reporter:
             fun = configs.is_within_pick_up
         elif self.time_filter == "D":
             fun = configs.is_within_drop_off
+        elif self.time_filter == "A":
+            fun = configs.is_not_within_pick_up_or_drop_off
         elif self.time_filter is None:
             fun = configs.is_within_pick_up_or_drop_off
 
@@ -189,7 +191,7 @@ class Jaywalking_Reporter:
 
 if __name__ == '__main__':
     n = "CM99V122139007597"
-    for f in [None,"P","D"]:
+    for f in [None,"P","D","A"]:
         reporter = Jaywalking_Reporter(n,time_filter=f)
         reporter.report()
         print(f"Done {f}")
