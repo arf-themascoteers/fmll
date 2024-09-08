@@ -1,11 +1,9 @@
-import tkinter
 import datetime
 from datetime import datetime as dtx
 from datetime import timedelta
 import db_handler
 import configs
 from shapely.geometry import Polygon, Point
-from collections import defaultdict
 import csv
 
 
@@ -15,7 +13,7 @@ class Reporter:
         self.time_window = time_window
         self.all_windows = None
 
-    def create_window(self, rows, start, windowId):
+    def create_window(self, rows, start, windowId, last_window):
         merged_frames = []
         start_timestamp = rows[start]["timestamp"]
         end_timestamp = start_timestamp + self.time_window
@@ -27,16 +25,20 @@ class Reporter:
             if this_timestamp > end_timestamp:
                 break
             merged_frames.append(rows[i])
+        date_string = configs.timestamp_to_date(start_timestamp)
+        date_obj = configs.date_str_to_obj(date_string)
         window = {
             "start_timestamp":start_timestamp,
             "windowId":windowId,
+            "length": 1,
             "actors":[],
             "hasVehicle": False,
             "hasPed": False,
             "hasBicycle": False,
             "isNearMiss": False,
             "isVehicleNearCollision": False,
-            "date":self.timestamp_to_date(start_timestamp)
+            "date":date_string,
+            "date_obj": date_obj
         }
 
         for mf in merged_frames:
@@ -54,13 +56,30 @@ class Reporter:
                 "objectId": mf[3],
             }
             window["actors"].append(actor)
+
         if window["hasVehicle"] and window["hasPed"]:
             window["isNearMiss"] = True
         vehicleIds = [actor["objectId"] for actor in window["actors"] if actor["channelId"] == 0]
         vehicleIds = set(vehicleIds)
         if len(vehicleIds) > 1:
             window["isVehicleNearCollision"] = True
-        return window, next_start_index
+
+        is_same = False
+
+        if Reporter.if_similar_window(last_window, window):
+            is_same = True
+            last_window["length"] = last_window["length"] + 1
+            window = last_window
+
+        return window, next_start_index, is_same
+
+    @staticmethod
+    def if_similar_window(window1, window2):
+        if window1 is None or window2 is None:
+            return False
+        if window1["isNearMiss"] == window2["isNearMiss"] and window1["isVehicleNearCollision"] == window2["isVehicleNearCollision"]:
+            return True
+        return False
 
     def mark_crossing(self, rows):
         boundary = configs.get_boundary_coords(self.networkId)
@@ -78,31 +97,29 @@ class Reporter:
         self.all_windows = []
         rows = db_handler.get_data_by_netId(self.networkId)
         rows = self.mark_crossing(rows)
-        print("Done crossing")
-        print(len(rows))
         start_index = 0
         windowId = 0
+        window = None
         while start_index is not None and start_index < len(rows):
-            print(start_index)
-            window, start_index = self.create_window(rows, start_index, windowId)
+            window, start_index, is_same = self.create_window(rows, start_index, windowId, window)
             self.all_windows.append(window)
-            windowId = windowId + 1
-        print("Done windows")
-        print(len(rows))
+            if not is_same:
+                windowId = windowId + 1
         ag_windows = self.ag_windows()
-        self.export_to_csv(ag_windows,"report.csv")
+        self.export_to_csv(ag_windows,"nm.csv")
 
     def ag_windows(self):
         aggregated_data = []
         last_date = None
 
-        sorted(self.all_windows, key=lambda x: x["date"])
+        self.all_windows = sorted(self.all_windows, key=lambda x: x["date_obj"])
         for window in self.all_windows:
-            if last_date is None or window["date"] != last_date["date"]:
+            if last_date is None or window["date_obj"] != last_date["date_obj"]:
                 if last_date is not None:
                     aggregated_data.append(last_date)
                 last_date = {
                     "date": window["date"],
+                    "date_obj": window["date_obj"],
                     "totalNearmiss":0,
                     "totalVehicleNearCol":0,
                     "is_holiday": 0
@@ -116,28 +133,31 @@ class Reporter:
             if configs.is_off_day(window["start_timestamp"]):
                 last_date["is_holiday"] = 1
 
+        if last_date is not None:
+            aggregated_data.append(last_date)
 
-
-        current_date = aggregated_data[0]["date"]
-        end_date = aggregated_data[-1]["date"]
+        current_date = aggregated_data[0]["date_obj"]
+        end_date = aggregated_data[-1]["date_obj"]
 
         while current_date < end_date:
-            if current_date not in aggregated_data:
-                if not self.has_date(aggregated_data, current_date):
-                    dt = {"date": current_date, "totalNearmiss": 0,
-                                            "totalVehicleNearCol":0,
-                          "is_holiday":int(configs.is_off_day_day(current_date))}
+            if not self.has_date(aggregated_data, current_date):
+                dt = {
+                        "date": configs.format_date(current_date),
+                        "date_obj": current_date,
+                        "totalNearmiss": 0,
+                        "totalVehicleNearCol":0,
+                        "is_holiday":int(configs.is_off_day_day(current_date)),
+                      }
 
-                    aggregated_data.append(dt)
-            current_date = self.convert_to_date(current_date) + timedelta(days=1)
-            current_date = self.convert_to_str(current_date)
-            print(current_date)
-        sorted(aggregated_data, key=lambda x: x["date"])
+                aggregated_data.append(dt)
+            current_date = current_date + timedelta(days=1)
+
+        aggregated_data = sorted(aggregated_data, key=lambda x: x["date_obj"])
         return aggregated_data
 
     def has_date(self, dates, current_date):
         for date in dates:
-            if date["date"] == current_date:
+            if date["date_obj"] == current_date:
                 return True
         return False
 
@@ -145,18 +165,12 @@ class Reporter:
         return date_obj + timedelta(days=1)
 
     def export_to_csv(self, dates, filename):
+        for d in dates:
+            d.pop('date_obj', None)
         with open(filename, mode='w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=["date", "totalNearmiss","totalVehicleNearCol","is_holiday"])
             writer.writeheader()
             writer.writerows(dates)
-
-    def timestamp_to_date(self, timestamp):
-        return datetime.datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
-
-    # def get_13_digit_epoch(self, timestamp):
-    #     dt_object = self.timestamp_to_date(timestamp)
-    #     dt_object = self.convert_to_date(dt_object)
-    #     return int(dt_object.timestamp() * 1000)
 
     def get_window_by_id(self, windowId):
         for window in self.all_windows:
@@ -169,6 +183,7 @@ class Reporter:
 
     def convert_to_str(self, date_obj):
         return date_obj.strftime("%Y-%m-%d")
+
 
 if __name__ == '__main__':
     n = "CM99V122139007597"

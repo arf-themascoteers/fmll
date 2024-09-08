@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 
 holidays = [
     ["2024-01-01","2024-01-29"],
@@ -37,6 +38,7 @@ def get_boundary_coords(netId):
 
 def from_timestamp_to_date(timestamp):
     return datetime.fromtimestamp(timestamp / 1000.0)
+
 def is_weekend(dt):
     dt = datetime.fromtimestamp(dt / 1000.0)
     return dt.weekday() >= 5
@@ -54,9 +56,36 @@ def is_off_day(dt):
     return is_weekend(dt) or is_in_holiday_range(dt)
 
 def is_off_day_day(date_obj):
-    date_obj = datetime.strptime(date_obj, '%Y-%m-%d')
     timestamp = int(date_obj.timestamp() * 1000)
     return is_weekend(timestamp) or is_in_holiday_range(timestamp)
 
+
+def date_to_epoch(date_str):
+    dt = datetime.strptime(date_str, '%Y-%m-%d')
+    epoch_time = int(time.mktime(dt.timetuple()) * 1000)
+    return epoch_time
+
+
+def timestamp_to_date(timestamp):
+    return datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
+
+
+def date_str_to_obj(date_str):
+    return datetime.strptime(date_str, '%Y-%m-%d')
+
+
+def format_date(date_obj):
+    return date_obj.strftime('%Y-%m-%d')
+
+
 if __name__ == "__main__":
-    print(is_off_day(1716879591644))
+    #print(is_off_day(1716879591644))
+    # ts = 1716879591644
+    # ttd = timestamp_to_date(ts)
+    # print(ttd)
+    # ts = date_to_epoch(ttd)
+    # print(ts)
+    d1 = date_str_to_obj("2024-08-29")
+    d2 = date_str_to_obj("2024-08-29")
+    print(d1==d2)
+
