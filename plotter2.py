@@ -12,7 +12,7 @@ def plot_bar_chart(csv_file, loc, filename):
 
     plt.figure(figsize=(len(df) * 0.3, 6))
 
-    plt.bar(indices, df['totalNearmiss'], width=bar_width, label='Nearmiss',
+    plt.bar(indices, df['totalNearmiss'], width=bar_width, label='Near misses',
             color=np.where(df['is_holiday'] == 1, 'lightcoral', 'blue'))
     plt.bar(indices + bar_width, df['totalVehicleNearCol'], width=bar_width, label='Vehicle near misses',
             color=np.where(df['is_holiday'] == 1, 'lightgreen', 'green'))
@@ -31,7 +31,7 @@ def plot_bar_chart(csv_file, loc, filename):
     dest = os.path.join(loc, filename)
     plt.savefig(dest)
 
-loc = r"C:\Users\kisho\OneDrive - Web Mascot Pty Ltd\Desktop\fmll2"
+loc = r"results"
 
 for f in os.listdir(loc):
     if f.startswith("report_") and f.endswith(".csv"):
