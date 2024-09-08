@@ -201,8 +201,7 @@ class Jaywalking_Reporter:
 
 if __name__ == '__main__':
     n = "CM99V122139007597"
-    #for f in [None,"P","D","A"]:
-    for f in ["A"]:
+    for f in [None,"P","D","A","O"]:
         reporter = Jaywalking_Reporter(n,time_filter=f)
         reporter.report()
         print(f"Done {f}")
